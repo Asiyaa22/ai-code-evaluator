@@ -1,0 +1,8 @@
+rubric:
+  structure: 3
+  semantics: 3
+  logical_properties: 3
+  navbar: 3
+  main_content: 3
+  footer: 2
+  ui_and_code_quality: 3
