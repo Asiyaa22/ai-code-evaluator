@@ -1,8 +1,38 @@
 rubric:
-  structure: 3
-  semantics: 3
-  logical_properties: 3
-  navbar: 3
-  main_content: 3
-  footer: 2
-  ui_and_code_quality: 3
+ # structure: 3
+ # Project Setup & Code Structure
+ project_setup_and_file_structure: 1
+ boilerplate_html_structure: 1
+ code_indentation_and_formatting: 1
+
+ # semantics: 3
+ # Fundamental CSS Concepts
+ box_sizing_border_box: 1
+ body_dimensions_and_font_family_set_to_sans-serif: 2
+ # Using classes properly instead of repetitive CSS
+ use_of_common_classes: 1
+ # Correct use of <pre> and <code> tags
+ correct_pre_and_code_tags: 1
+ # Logical structure in CSS styling
+ consistent_spacing_layout_effectively_using_padding_margin: 1
+
+ # navbar: 3
+ # Styling links properly in navbar
+ link_styling_and_navigation: 2
+ # Button styling and inheritance (like nav buttons if any)
+ button_styling_with_inheritance: 1
+
+ # main_content: 3
+ # Using nth-child and pseudo-classes correctly for main content
+ nth_child_selector_usage: 2
+ pseudo_class_selector_usage: 2
+
+ # footer: 2
+ # Pseudo-elements usage like ::selection
+ pseudo_element_selector_usage: 1
+ applying_selection_style_correctly: 2
+
+ # ui_and_code_quality: 3
+ # Overall correct implementation and quality
+ overall_pseudo_selectors_implementation: 1
+ 

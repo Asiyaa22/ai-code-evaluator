@@ -6,9 +6,8 @@ import yaml from "yaml";
 export const loadRubric = (filePath) => {
    const file = fs.readFileSync(filePath, "utf-8");
    const data = yaml.parse(file);
+   // console.log("Data from utils is:", data);
    return data.rubric;
-
-   
 };
 
 

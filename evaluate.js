@@ -3,10 +3,6 @@ import { evaluateWithGemini } from "./gemini.js";
 
 let results = [];
 export const evaluateAllSubmissions = async (submissionDir, rubric) => {
-  // const studentFolders = fs.readdirSync(submissionDir).filter(name => {
-  //     fs.statSync(`${submissionDir}/${name}`).isDirectory();
-  // })
-
   // post-fix
   let studentFolders = fs.readdirSync(submissionDir);
 
@@ -76,6 +72,27 @@ export const evaluateAllSubmissions = async (submissionDir, rubric) => {
 
     const css = fs.existsSync(cssPath) ? fs.readFileSync(cssPath, "utf-8") : "";
 
+    let missingFilesNote = "";
+    
+    if(!html.trim() && !css.trim()){
+      missingFilesNote = "Both HTML and CSS files are missing";
+    }else if(!html.trim()){
+      missingFilesNote = "HTML file is Missing"; 
+    }else if(!css.trim()){
+      missingFilesNote = "CSS file is Missing";
+    }else {
+      missingFilesNote = "Files found.";
+    }
+    //missing files logic sorted
+
+    //now moving to flag for manual correction
+    let needsManualCorrection = "No";
+
+    if(html.length < 30 || css.length < 10){
+      needsManualCorrection = "Yes";
+    }
+
+
     console.log("now moving to run evaluateStudent() then will log the result");
     // const result = await evaluateStudent(html, css, rubric, studentName);
     //printing rubric
@@ -86,6 +103,8 @@ export const evaluateAllSubmissions = async (submissionDir, rubric) => {
       results.push({
         student: student,
         result: result, // this is the full Gemini response text
+        missingFilesNote: missingFilesNote,
+        needsManualCorrection: needsManualCorrection
       });
     } catch (err) {
       console.error(`❌ Error while evaluating ${student}:`, err.message);
@@ -97,21 +116,29 @@ export const evaluateAllSubmissions = async (submissionDir, rubric) => {
   //creating csv format taake it should not break
   // let csvContent = "Student,Result\n";
 
-  // Creating CSV format with summary
-let csvContent = "Student,Marks,Feedback\n";
+  // Creating CSV format with summary this is actaul header
+let csvContent = "Student,Marks,Feedback,Missing Files,Needs Manual Correction\n";
 
 // Loop through results and format the CSV rows
 results.forEach((entry) => {
   // Extract total marks (assuming it's in the format "X/20")
-  const totalMarksMatch = entry.result.match(/Total Marks: (\d+\/20)/);
+  // const totalMarksMatch = entry.result.match(/Total Marks: (\d+\/20)/);
+  //the above code is giving n/a in ouput results so the corrected code is below with proper regex
+  // Use the updated regex to capture the total marks
+  const totalMarksMatch = entry.result.match(/Total Marks: (\d+)\/(\d+)/);
   const totalMarks = totalMarksMatch ? totalMarksMatch[1] : "N/A";
   
   // Extract feedback summary from the breakdown
-  const feedbackMatch = entry.result.match(/- Structure:.*?([^.]+)\./);
-  const feedback = feedbackMatch ? feedbackMatch[1] : "No feedback available";
+  // const feedbackMatch = entry.result.match(/- Structure:.*?([^.]+)\./);
+  // const feedback = feedbackMatch ? feedbackMatch[1] : "No feedback available";
+  //this code (above wala) will only give first content of feedback not the whole summarry to get detailed feedback this is code
+  
+  const breakdownMatch = entry.result.match(/Breakdown:(.*)/s);
+  const feedback = breakdownMatch ? breakdownMatch[1].trim() : "NO detailed feedback available";
 
   // Add to CSV
-  csvContent += `"${entry.student}","${totalMarks}","${feedback.replace(/"/g, "'")}"\n`;
+  //this is csv row header basically
+  csvContent += `"${entry.student}","${totalMarks}","${feedback.replace(/"/g, "'")}", "${entry.missingFilesNote}", "${entry.needsManualCorrection}"\n`;
 });
 
 // Write to file
@@ -128,38 +155,61 @@ results.forEach((entry) => {
 };
 
 //brain to gemini connector
-
 export const evaluateStudent = async (html, css, rubric, studentName) => {
+
+  //getting total marks 
+  const totalMarks = Object.values(rubric).reduce((sum, val) => sum + val, 0);
+
+
+  const expectedHtml = fs.readFileSync("./expected/index.html", "utf-8");
+  const expectedCss = fs.readFileSync("./expected/style.css", "utf-8");
+  
+
   const rubricText = Object.entries(rubric)
     .map(([key, value]) => `- ${key.replaceAll("_", " ")} (${value} marks)`)
     .join("\n");
 
   const prompt = `
-  You are an AI Code Evaluator. Use the rubric below to evaluate the following code.
-  
-  Rubric:
-  ${rubricText}
-  
-  Student Code:
-  HTML:
-  ${html}
-  
-  CSS:
-  ${css}
-  
-  Instructions:
-  1. Give total marks (out of 20).
-  2. Break down marks per category.
-  3. Give clear feedback/suggestions for each category.
-  
-  Respond in this format:
-  Student: ${studentName}
-  Total Marks: X/20
-  Breakdown:
-  - Structure: X/3 - Feedback
-  - Semantics: X/3 - Feedback
-  ...etc
-  `;
+You are an AI Code Evaluator and Corrector for student assignments.
+
+Below is the official **Expected Output** code for this assignment:
+(Expected HTML):
+${expectedHtml}
+
+(Expected CSS):
+${expectedCss}
+
+Below is the **Student's Submission**:
+(Student HTML):
+${html}
+
+(Student CSS):
+${css}
+
+Rubric (Marks out of ${totalMarks}):
+${rubricText}
+
+Evaluation Instructions:
+1. First, COMPARE the student's code with the Expected Output.
+2. Identify major differences, missing sections, bad structure, bad CSS, etc.
+3. Score the student's work according to the rubric.
+4. Even if student's work is incomplete, still evaluate and suggest corrections.
+5. Be strict but encouraging — reward correct effort, but point out flaws clearly.
+
+FINAL RESPONSE FORMAT:
+Student: ${studentName}
+Total Marks: X/${totalMarks}
+Breakdown:
+- Structure: X/3 - Feedback
+- Semantics: X/3 - Feedback
+- Logical Properties: X/3 - Feedback
+- Navbar: X/3 - Feedback
+- Main Content: X/3 - Feedback
+- Footer: X/2 - Feedback
+- UI and Code Quality: X/3 - Feedback
+`;
+
+
   try {
     const response = await evaluateWithGemini(prompt);
     console.log(response);
@@ -168,9 +218,6 @@ export const evaluateStudent = async (html, css, rubric, studentName) => {
     console.error("❌ Gemini API Error:", err.message);
    return `Error evaluating ${studentName}`;
   }
-  // const response = await evaluateWithGemini(prompt);
-  // console.log(response);
-  // return response;
 };
 
 //Pro=tip we can use promises instead of for of to make it faster
