@@ -88,10 +88,10 @@ export const evaluateAllSubmissions = async (submissionDir, rubric) => {
     //now moving to flag for manual correction
     let needsManualCorrection = "No";
 
-    if(html.length < 30 || css.length < 10){
+    if(html.length < 15 || css.length < 4){
       needsManualCorrection = "Yes";
     }
-
+    
 
     console.log("now moving to run evaluateStudent() then will log the result");
     // const result = await evaluateStudent(html, css, rubric, studentName);
@@ -169,7 +169,7 @@ export const evaluateStudent = async (html, css, rubric, studentName) => {
     .map(([key, value]) => `- ${key.replaceAll("_", " ")} (${value} marks)`)
     .join("\n");
 
-  const prompt = `
+  let prompt = `
 You are an AI Code Evaluator and Corrector for student assignments.
 
 Below is the official **Expected Output** code for this assignment:
@@ -190,25 +190,58 @@ Rubric (Marks out of ${totalMarks}):
 ${rubricText}
 
 Evaluation Instructions:
-1. First, COMPARE the student's code with the Expected Output.
-2. Identify major differences, missing sections, bad structure, bad CSS, etc.
-3. Score the student's work according to the rubric.
-4. Even if student's work is incomplete, still evaluate and suggest corrections.
-5. Be strict but encouraging — reward correct effort, but point out flaws clearly.
+
+STRICT RULES:
+1. If the student's HTML is critically broken (missing <!DOCTYPE html>, missing <html> or <body> tags, wrong nesting, unclosed tags), give **zero marks for structure and boilerplate setup**.
+2. If student's CSS file is missing or empty, **assign zero marks for all styling-related criteria** immediately.
+3. If major sections like navbar, forms, footer, or main content are missing, **deduct heavily (minimum 50% of total marks)**.
+4. If less than 30% of expected content is implemented, **cap the total marks to maximum 4 out of ${totalMarks}** regardless of minor efforts.
+5. Use no mercy policy for:
+   - Missing structure
+   - Broken nesting
+   - Empty or missing CSS
+6. If indentation, readability, and file organization are poor, **apply further deduction**.
+7. Minor cosmetic differences (like colors, font families) are **acceptable** if structure and content are correct.
+8. Suggest constructive improvements at the end, but do not artificially boost the score to be encouraging.
+9. Award marks proportionate to actual quality — focus on *correctness*, *structure*, *content matching*, *semantic usage*, and *basic CSS application*.
+10. Be strict but fair — students need to learn accurate coding, not be falsely praised.
+
+Important Additional Notes:
+- If a student has made critical mistakes but shown strong attempt in SOME sections (like basic navbar setup or form implementation), reward proportionally within that section only.
+- For any submission missing BOTH HTML and CSS significantly, **the final mark should not exceed 2 or 3 out of ${totalMarks}.**
+
 
 FINAL RESPONSE FORMAT:
 Student: ${studentName}
 Total Marks: X/${totalMarks}
 Breakdown:
-- Structure: X/3 - Feedback
-- Semantics: X/3 - Feedback
-- Logical Properties: X/3 - Feedback
-- Navbar: X/3 - Feedback
-- Main Content: X/3 - Feedback
-- Footer: X/2 - Feedback
-- UI and Code Quality: X/3 - Feedback
+ project_setup_and_file_structure: 1
+ boilerplate_html_structure: 1
+ code_indentation_and_formatting: 1
+ box_sizing_border_box: 1
+ body_dimensions_and_font_family_set_to_sans-serif: 2
+ use_of_common_classes: 1
+ correct_pre_and_code_tags: 1
+ consistent_spacing_layout_effectively_using_padding_margin: 1
+ link_styling_and_navigation: 2
+ button_styling_with_inheritance: 1
+ nth_child_selector_usage: 2
+ pseudo_class_selector_usage: 2
+ pseudo_element_selector_usage: 1
+ applying_selection_style_correctly: 2
+ overall_pseudo_selectors_implementation: 1
 `;
 
+//if no css file
+if (!css.trim().length === 0) {
+  prompt += `
+IMPORTANT:
+- The student's CSS file is missing or empty. 
+- Please deduct marks in styling-related rubric items.
+- Assume their webpage will have no styling.
+- Penalize accordingly.
+`;
+}
 
   try {
     const response = await evaluateWithGemini(prompt);
