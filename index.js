@@ -1,5 +1,6 @@
 import express from "express";
 import multer from "multer";
+import cors from "cors"; 
 import fs from "fs";
 import path from "path";
 import { clearFolder } from "./clearFolder.js";
@@ -11,6 +12,9 @@ env.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+app.use(cors()); 
+app.use(express.json());
 
 // Create uploads and outputs folders if not exist
 if (!fs.existsSync("./submissions")) fs.mkdirSync("./submissions");
