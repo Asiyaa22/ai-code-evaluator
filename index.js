@@ -22,6 +22,8 @@ const corsOptions = {
 
 app.use(cors(corsOptions)); // 🔥🔥🔥🔥
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 
 // Create uploads and outputs folders if not exist
 if (!fs.existsSync("./submissions")) fs.mkdirSync("./submissions");
