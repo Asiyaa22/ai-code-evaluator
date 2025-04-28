@@ -13,7 +13,14 @@ env.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors()); 
+// 🔥 Configure CORS properly
+const corsOptions = {
+  origin: '*', 
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type'],
+};
+
+app.use(cors(corsOptions)); // 🔥🔥🔥🔥
 app.use(express.json());
 
 // Create uploads and outputs folders if not exist
