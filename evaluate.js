@@ -119,6 +119,15 @@ export const evaluateAllSubmissions = async (submissionDir, rubric) => {
   // Creating CSV format with summary this is actaul header
 let csvContent = "Student,Marks,Feedback,Missing Files,Needs Manual Correction\n";
 
+
+// Function to sanitize feedback for CSV
+function sanitizeCsv(text) {
+  if (!text) return "";
+  return text
+    .replace(/"/g, '""')    // Escape double quotes
+    .replace(/\n/g, ' | ')  // Replace newlines with a pipe for cleaner Excel view
+    .replace(/\r/g, '');    // Remove carriage returns if any
+}
 // Loop through results and format the CSV rows
 results.forEach((entry) => {
   // Extract total marks (assuming it's in the format "X/20")
@@ -138,7 +147,8 @@ results.forEach((entry) => {
 
   // Add to CSV
   //this is csv row header basically
-  csvContent += `"${entry.student}","${totalMarks}","${feedback.replace(/"/g, "'")}", "${entry.missingFilesNote}", "${entry.needsManualCorrection}"\n`;
+  csvContent += `"${entry.student}","${totalMarks}","${sanitizeCsv(feedback)}","${entry.missingFilesNote}","${entry.needsManualCorrection}"\n`;
+  // csvContent += `"${entry.student}","${totalMarks}","${feedback.replace(/"/g, "'")}", "${entry.missingFilesNote}", "${entry.needsManualCorrection}"\n`;
 });
 
 // Write to file
